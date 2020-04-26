@@ -1,0 +1,9 @@
+services:
+  archivist:
+    # TODO!
+  flaggers:
+    # TODO!
+  web:
+    # TODO!
+volumes:
+  contract_bytecode: {} # TODO!
