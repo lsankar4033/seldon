@@ -1,5 +1,9 @@
+import rlp
 import sqlite3
 
+from eth_hash.auto import keccak
+from eth_utils.conversions import to_hex
+from eth_utils.hexadecimal import decode_hex
 from web3 import Web3
 
 # TODO: don't expose in git
@@ -43,6 +47,14 @@ def add_latest_block(b):
     return b
 
 
+def add_contract_bytecode(block: int, address: str, bytecode: str):
+    c = db.cursor()
+    c.execute(
+        f'INSERT INTO contract_bytecode (block, address, bytecode) VALUES ({block},{address},{bytecode})')
+    db.commit()
+    return (block, address, bytecode)
+
+
 # NOTE: just for testing
 def reset_latest_block():
     c = db.cursor()
@@ -50,16 +62,59 @@ def reset_latest_block():
     db.commit()
 
 
+# NOTE: if I want to add additional fields to sql table, this is where I'd do it
+def write_contract_tx_bytecode(tx):
+    contract_address = generate_contract_address(tx['from'], tx['nonce'])
+
+    # NOTE: I may opt to pull out the *actual* contract bytecode from this in the future
+    contract_bytecode = tx['input']
+    block = tx['blockNumber']
+
+    add_contract_bytecode(block, contract_address, contract_bytecode)
+
+
+def generate_contract_address(from_address: str, nonce: int):
+    rlp_encoded = rlp.encode([decode_hex(from_address), nonce])
+    hashed = keccak(rlp_encoded)
+
+    return force_bytes_to_address(hashed)
+
+
+def force_bytes_to_address(value: bytes):
+    trimmed_value = value[-20:]
+    padded_value = trimmed_value.rjust(20, b'\x00')
+
+    return to_hex(padded_value)
+
+
+REORG_BUFFER = 20
+
+
 def latest_web3_block():
     # NOTE: take actual latest - N, to provide re-org protection
     web3_response = w3.eth.getBlock('latest')
-    return web3_response.number
+    return web3_response.number - 20
+
+
+# NOTE: may want to verify that this is all we need, i.e. that we don't need 0x0 checks
+def is_contract_tx(tx):
+    return tx['to'] is None
+
+
+def get_block_contract_txes(block):
+    block = w3.eth.getBlock(block, True)
+    contract_txes = [tx for tx in block['transactions'] if is_contract_tx(tx)]
+
+    return contract_txes
 
 
 def poll_and_archive():
     latest_web3 = latest_web3_block()
     latest_db = latest_db_block()
     if latest_web3 > latest_db:
-        # for latest_db -> latest_web3, attempt to get contract data and store in db
-        # log each block processed where a contract lives
-        ...
+        for block in range(latest_db, latest_web3 + 1):
+            print(f'Processing block {block}')
+
+            contract_txes = get_block_contract_txes(block)
+            for tx in contract_tx:
+                write_contract_tx_bytecode(tx)
