@@ -1,4 +1,4 @@
-# watchdog
+# seldon
 
 Components:
 1. archivist
