@@ -19,7 +19,7 @@ def init_db():
     db = sqlite3.connect(DB_LOCATION)
     c = db.cursor()
 
-    c.execute('CREATE TABLE IF NOT EXISTS contract_bytecode (block integer, address text, bytecode text)')
+    c.execute('CREATE TABLE IF NOT EXISTS contract_bytecode (block integer, address text, bytecode blob)')
     c.execute('CREATE TABLE IF NOT EXISTS latest_block (block integer)')
 
     db.commit()
@@ -47,7 +47,7 @@ def add_latest_block(b):
     return b
 
 
-def add_contract_bytecode(block: int, address: str, bytecode: str):
+def add_contract_bytecode(block: int, address: str, bytecode: bytes):
     c = db.cursor()
     c.execute(
         f'INSERT INTO contract_bytecode (block, address, bytecode) VALUES ({block},{address},{bytecode})')
@@ -67,7 +67,7 @@ def write_contract_tx_bytecode(tx):
     contract_address = generate_contract_address(tx['from'], tx['nonce'])
 
     # NOTE: I may opt to pull out the *actual* contract bytecode from this in the future
-    contract_bytecode = tx['input']
+    contract_bytecode = decode_hex(tx['input'])
     block = tx['blockNumber']
 
     add_contract_bytecode(block, contract_address, contract_bytecode)
