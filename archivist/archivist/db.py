@@ -1,9 +1,12 @@
+import logging
 import sqlite3
 
 from archivist.types import Transaction
 
 # NOTE: change based on mount location of volume
 DB_LOCATION = 'data.db'
+
+logger = logging.getLogger('archivist.db')
 
 
 class Database():
@@ -25,7 +28,7 @@ class Database():
         self.db.commit()
 
     def latest_block(self):
-        c = db.cursor()
+        c = self.db.cursor()
         blocks = list(c.execute('SELECT block FROM latest_block ORDER BY block DESC LIMIT 1'))
 
         if len(blocks) == 0:
@@ -37,7 +40,8 @@ class Database():
         c = self.db.cursor()
         c.execute('INSERT INTO latest_block (block) VALUES (?)', (b,))
         self.db.commit()
-        return b
+
+        logger.info(f'updated latest block to {b}')
 
     def add_contract_creation(self, contract_creation_tx: Transaction):
         block = contract_creation_tx.block
@@ -51,6 +55,8 @@ class Database():
                 (?, ?, ?, ?)''',
                   (block, tx_hash, address, bytecode))
         self.db.commit()
+
+        logger.info(f'added contract creation for contract {address} with tx_hash {tx_hash}')
 
     def contract_by_address(self, address: str):
         # NOTE: for testing the db, perhaps just a temp method
