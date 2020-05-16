@@ -40,17 +40,26 @@ def latest_db_block():
         return blocks[0][0]
 
 
+# NOTE: for testing the db, perhaps just a temp method
+def contract_by_address(address: str):
+    c = db.cursor()
+    c.execute('SELECT * from contract_bytecode WHERE address=?', (address,))
+
+    return c.fetchone()
+
+
 def add_latest_block(b):
     c = db.cursor()
-    c.execute(f'INSERT INTO latest_block (block) VALUES ({b})')
+    c.execute('INSERT INTO latest_block (block) VALUES (?)', (b,))
     db.commit()
     return b
 
 
 def add_contract_bytecode(block: int, address: str, bytecode: bytes):
     c = db.cursor()
-    c.execute(
-        f'INSERT INTO contract_bytecode (block, address, bytecode) VALUES ({block},{address},{bytecode})')
+
+    c.execute('INSERT INTO contract_bytecode (block, address, bytecode) VALUES (?, ?, ?)',
+              (block, address, bytecode))
     db.commit()
     return (block, address, bytecode)
 
@@ -116,5 +125,5 @@ def poll_and_archive():
             print(f'Processing block {block}')
 
             contract_txes = get_block_contract_txes(block)
-            for tx in contract_tx:
+            for tx in contract_txes:
                 write_contract_tx_bytecode(tx)
