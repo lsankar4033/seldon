@@ -1,7 +1,7 @@
 services:
   archivist:
     # TODO!
-  flaggers:
+  gumshoe:
     # TODO!
   web:
     # TODO!
