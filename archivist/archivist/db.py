@@ -24,8 +24,26 @@ class Database():
                 bytecode blob)
                 ''')
         c.execute('CREATE TABLE IF NOT EXISTS latest_block (block integer)')
+        c.execute('CREATE TABLE IF NOT EXISTS manual_blocks (block integer)')
 
         self.db.commit()
+
+    def manual_blocks(self):
+        c = self.db.cursor()
+        records = list(c.execute('SELECT block FROM manual_blocks'))
+
+        block_set = set()
+        for record in records:
+            block_set.add(record[0])
+
+        return block_set
+
+    def add_manual_block(self):
+        c = self.db.cursor()
+        c.execute('INSERT INTO manual_blocks (block) VALUES (?)', (b,))
+        self.db.commit()
+
+        logger.info(f'updated latest block to {b}')
 
     def latest_block(self):
         c = self.db.cursor()
