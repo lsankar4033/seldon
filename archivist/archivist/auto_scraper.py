@@ -3,7 +3,7 @@ import time
 
 LOOP_WAIT_SECS = 60
 
-logger = logging.getLogger('archivist.scraper')
+logger = logging.getLogger('archivist.auto_scraper')
 
 
 def scraper_loop(db, w3):

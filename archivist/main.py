@@ -1,6 +1,7 @@
 import logging
 import time
 
+import archivist.manual_scrape_server as manual_scrape_server
 from archivist.db import Database
 from archivist.w3 import W3
 
@@ -19,4 +20,5 @@ if __name__ == '__main__':
     db = Database()
     w3 = W3()
 
-    scraper_loop(db, w3)
+    server = manual_scrape_server.create_server(db, w3)
+    server.run()
